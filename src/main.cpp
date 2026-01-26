@@ -7,6 +7,10 @@ bool BP1;
 bool BP2;
 int pot;
 
+int pwm = 1;
+int freq = 25000;
+int res = 11;
+
 void setup() {
   // Initialise la liaison avec le terminal
   Serial.begin(115200);
@@ -19,6 +23,12 @@ void setup() {
   pinMode(2, INPUT_PULLUP);
   pinMode(12, INPUT_PULLUP);
 
+  pinMode(25, OUTPUT);
+  pinMode(26, OUTPUT);
+  pinMode(27, OUTPUT);
+
+  ledcSetup(pwm, freq, res);
+  ledcAttachPin(27, pwm);
 }
 
 void loop() {
@@ -27,8 +37,19 @@ void loop() {
   BP2 = digitalRead(12);
   pot = analogRead(33);
 
+
+
   Serial.printf("BP0 = %d ",BP0 );
   Serial.printf("BP1 = %d ",BP1);
   Serial.printf("BP2 = %d ",BP2);
   Serial.printf("pot = %d \n",pot);
+
+  ledcWrite(pwm, pot/2);
+  digitalWrite(25, BP0);
+  digitalWrite(26, BP1);
+
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.printf("pot : %d", pot);
+
 }
