@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "rgb_lcd.h"
+#include <ESP32Encoder.h>
 
 rgb_lcd lcd;
 bool BP0;
@@ -10,6 +11,8 @@ int pot;
 int pwm = 1;
 int freq = 25000;
 int res = 11;
+
+ESP32Encoder encoder;
 
 void setup() {
   // Initialise la liaison avec le terminal
@@ -29,6 +32,10 @@ void setup() {
 
   ledcSetup(pwm, freq, res);
   ledcAttachPin(27, pwm);
+
+  encoder.attachFullQuad(23, 19);
+  encoder.clearCount();
+	Serial.println("Encoder Start = " + String((int32_t)encoder.getCount()));
 }
 
 void loop() {
@@ -42,7 +49,8 @@ void loop() {
   Serial.printf("BP0 = %d ",BP0 );
   Serial.printf("BP1 = %d ",BP1);
   Serial.printf("BP2 = %d ",BP2);
-  Serial.printf("pot = %d \n",pot);
+  Serial.printf("pot = %d ",pot);
+  Serial.printf("enc = %d \n",(int32_t)encoder.getCount());
 
   ledcWrite(pwm, pot/2);
   digitalWrite(25, BP0);
@@ -51,5 +59,5 @@ void loop() {
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.printf("pot : %d", pot);
-
+  delay(300);
 }
