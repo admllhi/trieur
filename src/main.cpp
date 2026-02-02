@@ -9,6 +9,8 @@ bool BP2;
 int pot;
 int cny;
 
+int pos,tour;
+
 int pwm = 1;
 int freq = 25000;
 int res = 11;
@@ -79,8 +81,8 @@ void loop()
   case INIT:
     digitalWrite(25, 1);
     digitalWrite(26, 1);
-    ledcWrite(pwm, 1300);
-    while (cny < 2000)
+    ledcWrite(pwm, 800);
+    while (cny < 1500)
     {
       cny = analogRead(36);
 
@@ -92,32 +94,63 @@ void loop()
   case ATTENTE:
     digitalWrite(25, 0);
     encoder.setCount(0);
+    pos = ((int32_t)encoder.getCount());
+    ledcWrite(pwm, 1200);
+    Serial.printf("BP0 = %d ",BP0);
+    Serial.printf("BP1 = %d ",BP1);  
     Serial.printf("Att \n");
-    int pos ((int32_t)encoder.getCount());
 
-
-    if (digitalRead(BP0) == LOW)
+    if (digitalRead(0) == LOW)
     {
       etat = ROT_HORAIRE;
     }
-    else if (digitalRead(BP1) == LOW)
+    else if (digitalRead(2) == LOW)
     {
       etat = ROT_ANTI_HORAIRE;
+    }
+    else{
+      etat = ATTENTE;
     }
     break;
 
   case ROT_HORAIRE:
     Serial.printf("hor \n");
-    digitalWrite(25, 1);
-    digitalWrite(26, 0);
+    tour = 0;
+    pos = 0;
+    for (int i = 0;i<8;i++){
+      Serial.printf("%d \n", i);
+      pos  = 0;
+      encoder.setCount(0);
+      while (pos > -40){
+        pos = ((int32_t)encoder.getCount());
+        Serial.printf("dans le if %d\n",pos);
+        digitalWrite(25, 1);
+        digitalWrite(26, 0); 
+        }
+    digitalWrite(25, 0);
+    delay(1000);}
+
     etat = ATTENTE;
     break;
 
   case ROT_ANTI_HORAIRE:
-    Serial.printf("ANTI-hor \n");
-    digitalWrite(25, 1);
-    digitalWrite(26, 1);
+    Serial.printf("hor \n");
+    tour = 0;
+    pos = 0;
+    for (int i = 0;i<8;i++){
+      Serial.printf("%d \n", i);
+      pos  = 0;
+      encoder.setCount(0);
+      while (pos < 40){
+        pos = ((int32_t)encoder.getCount());
+        Serial.printf("dans le if %d\n",pos);
+        digitalWrite(25, 1);
+        digitalWrite(26, 1); 
+        }
+    digitalWrite(25, 0);
+    delay(1000);}
+
     etat = ATTENTE;
-    break;
-  }
-}
+    break;}
+
+      }
