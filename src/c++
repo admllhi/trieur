@@ -1,0 +1,32 @@
+#include <Arduino.h>
+#include "BluetoothSerial.h"
+
+BluetoothSerial SerialBT;
+const int onMoteur = 25;
+
+void setup() {
+    Serial.begin(115200);
+    pinMode(ledPin, OUTPUT);
+    if (!SerialBT.begin("ESP32_BT")) {
+        Serial.println("Erreur initialisation Bluetooth");
+    while (1);
+    }
+    Serial.println("Bluetooth actif. En attente de connexion...");
+}
+
+
+void loop() {
+    if (SerialBT.available()) {
+        char c = SerialBT.read();
+        Serial.print("Reçu : ");
+        Serial.println(c);
+        if (c == '1') {
+            digitalWrite(onMoteur, HIGH);
+            SerialBT.println("Moteur ON");
+        }
+        if (c == '0') {
+            digitalWrite(onMoteur, LOW);
+            SerialBT.println("Moteur OFF");
+        }
+    }
+}

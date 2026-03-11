@@ -3,13 +3,17 @@
 #include <ESP32Encoder.h>
 #include <Wire.h>
 #include "Adafruit_TCS34725.h"
+#include "BluetoothSerial.h"
+
+BluetoothSerial SerialBT;
+const int onMoteur = 25;
 
 int codeur;
 int vitesse;
 int codeurMemo = 0;
 int erreur;
 int commande;
-int consigne;
+int consigne = 5;
 int integ;
 
 Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_614MS, TCS34725_GAIN_1X);
@@ -89,6 +93,14 @@ void setup()
   // Initialise la liaison avec le terminal
   Serial.begin(115200);
   // Initialise l'écran LCD
+
+  pinMode(25, OUTPUT);
+  if (!SerialBT.begin("ESP32_BT_orian_adam")) {
+    Serial.println("Erreur initialisation Bluetooth");
+    while (1);
+  }
+  Serial.println("Bluetooth actif. En attente de connexion...");
+
   Wire1.setPins(15, 5);
   lcd.begin(16, 2, LCD_5x8DOTS, Wire1);
   lcd.printf("Trieur de balles");
@@ -96,7 +108,6 @@ void setup()
   pinMode(2, INPUT_PULLUP);
   pinMode(12, INPUT_PULLUP);
 
-  pinMode(25, OUTPUT);
   pinMode(26, OUTPUT);
   pinMode(27, OUTPUT);
 
@@ -146,6 +157,72 @@ void loop()
   BP2 = digitalRead(12);
   pot = analogRead(33);
   cny = analogRead(36);
+  
+  if (SerialBT.available()) {
+    char c = SerialBT.read();
+    Serial.print("Reçu : ");
+    Serial.println(c);
+
+
+    if (c == '1') {
+      digitalWrite(onMoteur, HIGH);
+      SerialBT.println("Moteur ON");
+      integ = 0;
+      consigne = 5;
+    }
+    if (c == '0') {
+      digitalWrite(onMoteur, LOW);
+      SerialBT.println("Moteur OFF");
+      integ = 0;
+      consigne = 0;
+    }
+    if (c == 'a') {
+      SerialBT.println("Rotation AntiHoraire");
+      consigne = 5 ;
+      integ = 0;
+    }
+    if (c == 'h') {
+      SerialBT.println("Rotation Horaire");
+      consigne = -consigne;
+      integ = 0;
+    }
+    if (c == 'v') {
+      SerialBT.println("Vitesse Moteur");
+      consigne = SerialBT.parseInt();
+      integ = 0;
+    }
+
+       
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // Serial.printf("BP0 = %d ",BP0 );
   // Serial.printf("BP1 = %d ",BP1);
@@ -158,143 +235,143 @@ void loop()
   // lcd.setCursor(0, 0);
   // lcd.printf("pot : %d", pot);
 
-  switch (etat)
-  {
-  case INIT:
-    digitalWrite(25, 1);
-    consigne = 2;
-    while (cny < 3000 || cny > 4000)
-    {
-      cny = analogRead(36);
+  // switch (etat)
+  // {
+  // case INIT:
+  //   digitalWrite(25, 1);
+  //   consigne = 2;
+  //   while (cny < 3000 || cny > 4000)
+  //   {
+  //     cny = analogRead(36);
 
-      Serial.printf("init %d %d \n", cny, consigne);
-    }
-    digitalWrite(25, 0);
-    consigne = 0;
-    integ = 0;
-    etat = att;
-    break;
+  //     Serial.printf("init %d %d \n", cny, consigne);
+  //   }
+  //   digitalWrite(25, 0);
+  //   consigne = 0;
+  //   integ = 0;
+  //   etat = att;
+  //   break;
 
-  case att:
-    Serial.printf("BP0 = %d ", BP0);
-    Serial.printf("BP1 = %d ", BP1);
-    Serial.printf("Att \n");
-    if (digitalRead(0) == LOW)
-    {
-      etat = mes_couleur;
-    }
-    break;
+  // case att:
+  //   Serial.printf("BP0 = %d ", BP0);
+  //   Serial.printf("BP1 = %d ", BP1);
+  //   Serial.printf("Att \n");
+  //   if (digitalRead(0) == LOW)
+  //   {
+  //     etat = mes_couleur;
+  //   }
+  //   break;
 
-  case mes_couleur:
-    Serial.printf("mes_couleur \n");
+  // case mes_couleur:
+  //   Serial.printf("mes_couleur \n");
 
-    pos = ((int32_t)encoder.getCount());
-    pos1 = pos + 180;
+  //   pos = ((int32_t)encoder.getCount());
+  //   pos1 = pos + 180;
 
-    integ = 0;
-    consigne = 2;
-    digitalWrite(25, 1);
-
-  
-    while (pos < pos1)
-    {
-      Serial.printf("dans le while 2\n");
-      consigne = 1;
-      digitalWrite(25, 1);
-      pos = ((int32_t)encoder.getCount());
-    }
-    consigne = 0;
-    digitalWrite(25, 0);
-    integ = 0;
-    etat = test_balle;
-    Serial.printf("mes_couleur \n");
-    break;
-
-  case test_balle:
-    Serial.printf("test \n");
-    tcs.getRawData(&r, &g, &b, &c);
-    consigne = 0;
-    delay(1000);
-    if (r > 400)
-    {
-      etat = orange;
-    }
-    if (r < 400 & r >300)
-    {
-      etat = blanc;
-    }
-    break;
-
-  case orange:
-    consigne = 2;
-    digitalWrite(25, 1);
-    while (cny < 4000)
-    {
-      cny = analogRead(36);
-
-      Serial.printf("orange %d \n", cny);
-    }
-    digitalWrite(25, 0);
-    consigne = 0;
-    integ = 0;
-
-
-    pos = ((int32_t)encoder.getCount());
-    pos1 = pos + 95;
-
-    integ = 0;
-    consigne = 2;
-    digitalWrite(25, 1);
+  //   integ = 0;
+  //   consigne = 2;
+  //   digitalWrite(25, 1);
 
   
-    while (pos < pos1)
-    {
-      Serial.printf("dans le while 2\n");
-      consigne = 1;
-      digitalWrite(25, 1);
-      pos = ((int32_t)encoder.getCount());
-    }
-    consigne = 0;
-    digitalWrite(25, 0);
-    integ = 0;
-    etat = wait;
-    Serial.printf("mes_couleur \n");
-    break;
+  //   while (pos < pos1)
+  //   {
+  //     Serial.printf("dans le while 2\n");
+  //     consigne = 1;
+  //     digitalWrite(25, 1);
+  //     pos = ((int32_t)encoder.getCount());
+  //   }
+  //   consigne = 0;
+  //   digitalWrite(25, 0);
+  //   integ = 0;
+  //   etat = test_balle;
+  //   Serial.printf("mes_couleur \n");
+  //   break;
 
-  case blanc:
-    consigne = 2;
-    digitalWrite(25, 1);
-    while (cny < 4000)
-    {
-      cny = analogRead(36);
+  // case test_balle:
+  //   Serial.printf("test \n");
+  //   tcs.getRawData(&r, &g, &b, &c);
+  //   consigne = 0;
+  //   delay(1000);
+  //   if (r > 400)
+  //   {
+  //     etat = orange;
+  //   }
+  //   if (r < 400 & r >300)
+  //   {
+  //     etat = blanc;
+  //   }
+  //   break;
 
-      Serial.printf("blanc %d \n", cny);
-    }
-    digitalWrite(25, 0);
-    consigne = 0;
-    integ = 0;
-    etat = enleve;
-    break;
+  // case orange:
+  //   consigne = 2;
+  //   digitalWrite(25, 1);
+  //   while (cny < 4000)
+  //   {
+  //     cny = analogRead(36);
 
-  case enleve:
-    Serial.printf("enleve %d \n", cny);
-    cny = analogRead(36);
-    if (cny < 4000)
-    {
-      delay(500);
-      etat = INIT;
-    }
-    break;
+  //     Serial.printf("orange %d \n", cny);
+  //   }
+  //   digitalWrite(25, 0);
+  //   consigne = 0;
+  //   integ = 0;
+
+
+  //   pos = ((int32_t)encoder.getCount());
+  //   pos1 = pos + 95;
+
+  //   integ = 0;
+  //   consigne = 2;
+  //   digitalWrite(25, 1);
+
+  
+  //   while (pos < pos1)
+  //   {
+  //     Serial.printf("dans le while 2\n");
+  //     consigne = 1;
+  //     digitalWrite(25, 1);
+  //     pos = ((int32_t)encoder.getCount());
+  //   }
+  //   consigne = 0;
+  //   digitalWrite(25, 0);
+  //   integ = 0;
+  //   etat = wait;
+  //   Serial.printf("mes_couleur \n");
+  //   break;
+
+  // case blanc:
+  //   consigne = 2;
+  //   digitalWrite(25, 1);
+  //   while (cny < 4000)
+  //   {
+  //     cny = analogRead(36);
+
+  //     Serial.printf("blanc %d \n", cny);
+  //   }
+  //   digitalWrite(25, 0);
+  //   consigne = 0;
+  //   integ = 0;
+  //   etat = enleve;
+  //   break;
+
+  // case enleve:
+  //   Serial.printf("enleve %d \n", cny);
+  //   cny = analogRead(36);
+  //   if (cny < 4000)
+  //   {
+  //     delay(500);
+  //     etat = INIT;
+  //   }
+  //   break;
   
 
     
 
 
-  case wait:
-    delay(5000);
-    etat = INIT;
-    break;
-  }
+  // case wait:
+  //   delay(5000);
+  //   etat = INIT;
+  //   break;
+  // }
 
  
  /*
